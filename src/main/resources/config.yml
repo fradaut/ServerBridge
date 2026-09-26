@@ -1,0 +1,25 @@
+# Install the same plugin on both Paper 26.2 servers.
+# A bridge is an axis-aligned box. Entering it transfers the player.
+check-interval-ticks: 5
+transfer-cooldown-seconds: 5
+messages:
+  prefix: "<dark_aqua>[ServerBridge]</dark_aqua> "
+  transferring: "<aqua>正在前往 <white><server></white>…</aqua>"
+  no-permission: "<red>你沒有權限使用這個連接點。</red>"
+  unknown-bridge: "<red>找不到連接點 <white><bridge></white>。</red>"
+  reloaded: "<green>設定已重新載入。</green>"
+
+# Example (remove enabled: false after editing):
+bridges:
+  survival-to-resource:
+    enabled: false
+    display-name: "資源世界"
+    world: world
+    region:
+      min: { x: 100, y: 60, z: -5 }
+      max: { x: 104, y: 70, z: 5 }
+    destination:
+      host: resource.example.net
+      port: 25566
+      # Optional exact landing point on the destination server.
+      arrival: { world: world, x: 0.5, y: 65, z: 0.5, yaw: 0, pitch: 0 }

@@ -1,0 +1,18 @@
+name: ServerBridge
+version: ${version}
+main: tw.sac.serverbridge.ServerBridgePlugin
+api-version: '26.2'
+author: SAC
+description: Walk across configurable borders to another Minecraft server.
+commands:
+  serverbridge:
+    description: Manage ServerBridge and transfer between configured servers.
+    usage: /serverbridge <list|go|reload>
+    aliases: [sbridge, sb]
+permissions:
+  serverbridge.use:
+    description: Allows automatic and command-based transfers.
+    default: true
+  serverbridge.admin:
+    description: Allows ServerBridge configuration reloads.
+    default: op
