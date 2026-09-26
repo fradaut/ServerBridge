@@ -11,7 +11,7 @@ ServerBridge 是 Minecraft 26.2 的跨伺服器連接插件。
 - 目標遊戲版本：Minecraft 26.2
 - 實際測試環境：Paper 26.2 build 129
 - Java：25
-- 連線方式：原生 Transfer，或 Waterfall／BungeeCord 相容代理
+- 連線方式：原生 Transfer，或 Velocity 代理
 
 本插件使用 Paper API 開發。其他相容 Paper 的伺服器核心可能也能使用，但目前
 沒有逐一測試；若希望最穩定，建議兩端都使用 Paper 26.2。
@@ -30,7 +30,7 @@ ServerBridge 是把玩家從「伺服器 A」送到「伺服器 B」，並不是
 每個連接點都能個別選擇連線方式：
 
 - `native`：玩家的客戶端直接連到另一台伺服器
-- `waterfall`：請 Waterfall／BungeeCord 代理把玩家切換到另一個後端伺服器
+- `velocity`：請 Velocity 代理把玩家切換到另一個後端伺服器
 
 ## 第一步：安裝插件
 
@@ -56,7 +56,7 @@ plugins/ServerBridge/config.yml
 ## 第二步：選擇連線方式
 
 如果玩家平常直接加入每一台 Paper 伺服器，請使用「原生 Transfer」。如果玩家只
-加入 Waterfall 的公開位址，再由 Waterfall 連接各台後端，請使用「Waterfall
+加入 Velocity 的公開位址，再由 Velocity 連接各台後端，請使用「Velocity
 代理」。同一份設定中也可以讓不同 bridge 使用不同模式。
 
 ### 方式 A：原生 Transfer
@@ -112,42 +112,47 @@ destination:
 
 未填 `mode` 時會自動使用 `native`，所以舊版設定仍然有效。
 
-### 方式 B：Waterfall／BungeeCord 代理
+### 方式 B：Velocity 代理
 
-Waterfall 模式不填公開 IP 和連接埠，而是填代理設定中的「後端伺服器名稱」。例如
-Waterfall 的 `config.yml` 有：
+Velocity 模式不填公開 IP 和連接埠，而是填代理設定中的「後端伺服器名稱」。例如
+Velocity 的 `velocity.toml` 有：
 
-```yaml
-servers:
-  lobby:
-    address: 127.0.0.1:25565
-    motd: "大廳"
-    restricted: false
-  resource:
-    address: 127.0.0.1:25566
-    motd: "資源世界"
-    restricted: false
+```toml
+player-info-forwarding-mode = "modern"
+
+[servers]
+lobby = "127.0.0.1:25565"
+resource = "127.0.0.1:25566"
+try = ["lobby"]
+
+[advanced]
+bungee-plugin-message-channel = true
 ```
 
 ServerBridge 就要使用完全相同的 `resource` 名稱：
 
 ```yaml
 destination:
-  mode: waterfall
+  mode: velocity
   server: resource
 ```
 
+ServerBridge 透過 Velocity 內建的 BungeeCord 插件訊息相容頻道發出切服要求，因此
+`bungee-plugin-message-channel` 必須是 `true`，但不需要在 Velocity 端另外安裝
+ServerBridge。
+
 注意事項：
 
-- 玩家必須從 Waterfall 代理進入；直接加入後端時，代理切服訊息不會生效
-- `server` 大小寫及拼法必須和 Waterfall `servers:` 下的鍵完全一致
-- Waterfall 必須開啟 `ip_forward: true`
-- 後端必須依 Waterfall 的 IP forwarding 說明正確設定
-- 後端連接埠應使用防火牆保護，只允許代理伺服器連入，不能直接公開給所有人
-- Waterfall 已不是 PaperMC 建議的新代理方案；新架構建議改用 Velocity。此模式是為
-  現有 Waterfall／BungeeCord 網路保留相容性
+- 玩家必須從 Velocity 代理進入；直接加入後端時，代理切服訊息不會生效
+- `server` 大小寫及拼法必須和 `velocity.toml` 的 `[servers]` 名稱完全一致
+- 建議使用 Velocity 的 `modern` 玩家資訊轉送，不要使用安全性較差的 `legacy`
+- 使用 modern forwarding 時，後端 `server.properties` 的 `online-mode` 設為
+  `false`，`spigot.yml` 的 `settings.bungeecord` 設為 `false`
+- 後端 `config/paper-global.yml` 的 `proxies.velocity.enabled` 設為 `true`，secret
+  必須與 Velocity 的 `forwarding.secret` 相同
+- 後端連接埠仍應使用防火牆保護，只允許 Velocity 代理連入
 
-使用 Waterfall 模式時，不需要為這個 bridge 設定 `accepts-transfers=true`，因為
+使用 Velocity 模式時，不需要為這個 bridge 設定 `accepts-transfers=true`，因為
 切服動作由代理完成，而不是 Minecraft 原生 Transfer。
 
 ## 第三步：取得連接區域座標
@@ -207,10 +212,10 @@ bridges:
 | `display-name` | 玩家轉服時看到的名稱 |
 | `world` | 連接區域位於伺服器 A 的哪個世界 |
 | `region.min/max` | 玩家進入後會觸發跨服的長方體範圍 |
-| `destination.mode` | `native` 使用直連；`waterfall` 使用代理切服 |
+| `destination.mode` | `native` 使用直連；`velocity` 使用代理切服 |
 | `destination.host` | 玩家可連到伺服器 B 的 IP 或網域 |
 | `destination.port` | 伺服器 B 的連接埠 |
-| `destination.server` | Waterfall 模式使用的代理後端名稱；原生模式不需要 |
+| `destination.server` | Velocity 模式使用的代理後端名稱；原生模式不需要 |
 | `arrival.world` | 抵達伺服器 B 後所在的世界 |
 | `arrival.x/y/z` | 抵達伺服器 B 後的座標 |
 | `arrival.yaw` | 玩家面向方向，`0` 南、`90` 西、`180` 北、`-90` 東 |
@@ -312,12 +317,12 @@ IP／網域、連接埠、防火牆和路由器轉發。
 確認目的伺服器也已安裝 ServerBridge，而且 `arrival.world` 指定的世界已載入、名稱
 完全相同。世界名稱不是遊戲內顯示名稱，而是伺服器內的世界資料夾名稱。
 
-### Waterfall 模式走進區域後沒有切服
+### Velocity 模式走進區域後沒有切服
 
 先確認玩家是從代理進入，而不是直接加入 Paper 後端。接著檢查
-`destination.server` 是否和 Waterfall `config.yml` 的後端名稱完全一致，並確認
-代理設定 `ip_forward: true`。ServerBridge 使用標準 `BungeeCord` 插件訊息頻道，
-不需要另外在 Waterfall 安裝 ServerBridge 插件。
+`destination.server` 是否和 `velocity.toml` 的後端名稱完全一致，並確認
+`bungee-plugin-message-channel = true`。ServerBridge 使用 Velocity 內建的
+`BungeeCord` 相容頻道，不需要另外在 Velocity 安裝 ServerBridge 插件。
 
 ### 玩家抵達後立刻被送回
 

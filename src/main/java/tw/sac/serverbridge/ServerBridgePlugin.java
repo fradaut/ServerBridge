@@ -43,7 +43,7 @@ public final class ServerBridgePlugin extends JavaPlugin implements Listener {
         loadBridgeConfig();
         registerCommands();
         getServer().getPluginManager().registerEvents(this, this);
-        getServer().getMessenger().registerOutgoingPluginChannel(this, WaterfallConnector.CHANNEL);
+        getServer().getMessenger().registerOutgoingPluginChannel(this, VelocityConnector.CHANNEL);
 
         long interval = Math.max(1L, getConfig().getLong("check-interval-ticks", 5L));
         getServer().getScheduler().runTaskTimer(this, this::scanPlayers, interval, interval);
@@ -104,8 +104,8 @@ public final class ServerBridgePlugin extends JavaPlugin implements Listener {
             player.storeCookie(arrivalCookie, TransferTicket.encode(bridge.arrival()));
         }
         player.sendMessage(message("transferring", "<aqua>正在前往 <white><server></white>…</aqua>", "server", bridge.displayName()));
-        if (bridge.connectionMode() == Bridge.ConnectionMode.WATERFALL) {
-            WaterfallConnector.connect(this, player, bridge.proxyServer());
+        if (bridge.connectionMode() == Bridge.ConnectionMode.VELOCITY) {
+            VelocityConnector.connect(this, player, bridge.proxyServer());
         } else {
             player.transfer(bridge.host(), bridge.port());
         }

@@ -40,6 +40,6 @@ record Bridge(
 
     enum ConnectionMode {
         NATIVE,
-        WATERFALL
+        VELOCITY
     }
 }

@@ -8,10 +8,10 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class WaterfallConnectorTest {
+class VelocityConnectorTest {
     @Test
     void createsBungeeCordConnectMessage() throws IOException {
-        byte[] message = WaterfallConnector.connectMessage("resource");
+        byte[] message = VelocityConnector.connectMessage("resource");
 
         try (DataInputStream input = new DataInputStream(new ByteArrayInputStream(message))) {
             assertEquals("Connect", input.readUTF());

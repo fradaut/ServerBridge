@@ -7,10 +7,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-final class WaterfallConnector {
+/** Sends a Connect request through Velocity's BungeeCord-compatible channel. */
+final class VelocityConnector {
     static final String CHANNEL = "BungeeCord";
 
-    private WaterfallConnector() {
+    private VelocityConnector() {
     }
 
     static void connect(Plugin plugin, Player player, String serverName) {
@@ -26,7 +27,7 @@ final class WaterfallConnector {
             }
             return bytes.toByteArray();
         } catch (IOException exception) {
-            throw new IllegalStateException("Could not create Waterfall connect message", exception);
+            throw new IllegalStateException("Could not create Velocity connect message", exception);
         }
     }
 }
