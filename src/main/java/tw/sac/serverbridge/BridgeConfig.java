@@ -71,6 +71,7 @@ final class BridgeConfig {
                 id,
                 section.getString("display-name", id),
                 world,
+                booleanOption(section, "require-op", false),
                 Math.min(x1, x2), Math.min(y1, y2), Math.min(z1, z2),
                 Math.max(x1, x2), Math.max(y1, y2), Math.max(z1, z2),
                 connectionMode,
@@ -105,5 +106,15 @@ final class BridgeConfig {
             throw new IllegalArgumentException(path + " must be a number");
         }
         return section.getDouble(path);
+    }
+
+    private static boolean booleanOption(ConfigurationSection section, String path, boolean fallback) {
+        if (!section.contains(path)) {
+            return fallback;
+        }
+        if (!section.isBoolean(path)) {
+            throw new IllegalArgumentException(path + " must be true or false");
+        }
+        return section.getBoolean(path);
     }
 }

@@ -6,6 +6,7 @@ record Bridge(
         String id,
         String displayName,
         String world,
+        boolean requireOp,
         double minX,
         double minY,
         double minZ,
@@ -33,6 +34,10 @@ record Bridge(
      */
     static boolean containsBlock(int playerBlock, double min, double max) {
         return playerBlock >= Math.floor(min) && playerBlock <= Math.floor(max);
+    }
+
+    static boolean allows(boolean hasUsePermission, boolean isOp, boolean requireOp) {
+        return hasUsePermission && (!requireOp || isOp);
     }
 
     record Arrival(String world, double x, double y, double z, float yaw, float pitch) {

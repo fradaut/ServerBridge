@@ -83,7 +83,7 @@ public final class ServerBridgePlugin extends JavaPlugin implements Listener {
                 continue;
             }
             occupiedBridge.put(player.getUniqueId(), current.id());
-            if (player.hasPermission(USE_PERMISSION) && !cooldownUntil.containsKey(player.getUniqueId())) {
+            if (!cooldownUntil.containsKey(player.getUniqueId()) && canUse(player, current, true)) {
                 transfer(player, current);
             }
         }
@@ -109,6 +109,27 @@ public final class ServerBridgePlugin extends JavaPlugin implements Listener {
         } else {
             player.transfer(bridge.host(), bridge.port());
         }
+    }
+
+    private boolean canUse(Player player, Bridge bridge, boolean notify) {
+        boolean hasUsePermission = player.hasPermission(USE_PERMISSION);
+        boolean isOp = player.isOp();
+        if (Bridge.allows(hasUsePermission, isOp, bridge.requireOp())) {
+            return true;
+        }
+        if (!hasUsePermission) {
+            if (notify) {
+                player.sendMessage(message("no-permission", "<red>你沒有權限使用這個連接點。</red>"));
+            }
+            return false;
+        }
+        if (bridge.requireOp() && !isOp) {
+            if (notify) {
+                player.sendMessage(message("op-required", "<red>這個連接點只允許伺服器管理員使用。</red>"));
+            }
+            return false;
+        }
+        return false;
     }
 
     @EventHandler
@@ -167,13 +188,16 @@ public final class ServerBridgePlugin extends JavaPlugin implements Listener {
             }
 
             if (args[0].equalsIgnoreCase("go") && args.length >= 2 && sender instanceof Player player) {
-                if (!player.hasPermission(USE_PERMISSION)) {
-                    player.sendMessage(message("no-permission", "<red>你沒有權限。</red>"));
+                if (!player.isOp()) {
+                    player.sendMessage(message("command-op-required", "<red>只有伺服器管理員能使用跨服指令。</red>"));
                     return true;
                 }
                 Bridge bridge = bridges.get(args[1].toLowerCase(Locale.ROOT));
                 if (bridge == null) {
                     player.sendMessage(message("unknown-bridge", "<red>找不到連接點 <white><bridge></white>。</red>", "bridge", args[1]));
+                    return true;
+                }
+                if (!canUse(player, bridge, true)) {
                     return true;
                 }
                 transfer(player, bridge);
@@ -187,13 +211,17 @@ public final class ServerBridgePlugin extends JavaPlugin implements Listener {
         @Override
         public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
             if (args.length <= 1) {
-                List<String> options = new ArrayList<>(List.of("list", "go"));
+                List<String> options = new ArrayList<>(List.of("list"));
+                if (sender instanceof Player player && player.isOp()) {
+                    options.add("go");
+                }
                 if (sender.hasPermission(ADMIN_PERMISSION)) {
                     options.add("reload");
                 }
                 return options;
             }
-            if (args.length == 2 && args[0].equalsIgnoreCase("go")) {
+            if (args.length == 2 && args[0].equalsIgnoreCase("go")
+                    && sender instanceof Player player && player.isOp()) {
                 return List.copyOf(bridges.keySet());
             }
             return List.of();

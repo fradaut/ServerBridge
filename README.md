@@ -187,6 +187,7 @@ bridges:
     enabled: true
     display-name: "資源世界"
     world: world
+    require-op: false
     region:
       min: { x: 100, y: 60, z: -5 }
       max: { x: 104, y: 70, z: 5 }
@@ -211,6 +212,7 @@ bridges:
 | `enabled` | `true` 表示啟用，`false` 表示暫停使用 |
 | `display-name` | 玩家轉服時看到的名稱 |
 | `world` | 連接區域位於伺服器 A 的哪個世界 |
+| `require-op` | 控制區域觸發：`true` 只有 OP 可連；`false` 一般玩家也可連 |
 | `region.min/max` | 玩家進入後會觸發跨服的長方體範圍 |
 | `destination.mode` | `native` 使用直連；`velocity` 使用代理切服 |
 | `destination.host` | 玩家可連到伺服器 B 的 IP 或網域 |
@@ -235,6 +237,7 @@ bridges:
     enabled: true
     display-name: "生存世界"
     world: world
+    require-op: false
     region:
       min: { x: 8, y: 60, z: 8 }
       max: { x: 12, y: 70, z: 12 }
@@ -279,20 +282,48 @@ bridges:
 
 一般玩家只需要走進管理員設定好的區域，不必輸入任何指令。
 
+### 不安裝權限插件時限制 OP
+
+每個 bridge 都可以獨立設定是否只有 OP 能使用，不需要安裝 LuckPerms 或其他權限
+管理插件：
+
+```yaml
+bridges:
+  admin-world:
+    enabled: true
+    display-name: "管理員世界"
+    world: world
+    require-op: true
+    # region 與 destination 照一般方式設定
+```
+
+- `require-op: true`：只有使用 `/op 玩家名稱` 授予 OP 的玩家能走進該區域跨服
+- `require-op: false`：一般玩家也能使用，這是未填設定時的預設值
+
+若玩家沒有 OP 而走進 OP 專用區域，插件會顯示拒絕訊息，不會進行傳送。這個選項
+直接讀取 Paper 內建的 OP 狀態，與權限插件無關。
+
+`/sb go <連接點 ID>` 是管理員測試指令，無論 bridge 的 `require-op` 設定為何，
+都只有 OP 能使用。一般玩家的正常使用方式是走進 `require-op: false` 的區域。
+
 ### 指令一覽
 
 | 指令 | 用途 |
 | --- | --- |
 | `/sb list` | 列出目前已啟用的連接點 |
-| `/sb go <連接點 ID>` | 直接測試或前往指定連接點 |
+| `/sb go <連接點 ID>` | OP 專用；直接測試或前往指定連接點 |
 | `/sb reload` | 儲存設定檔後重新載入 |
 
 ### 權限一覽
 
 | 權限 | 用途 | 預設 |
 | --- | --- | --- |
-| `serverbridge.use` | 允許進入區域跨服及使用 `/sb go` | 所有玩家 |
+| `serverbridge.use` | 允許進入公開區域跨服 | 所有玩家 |
 | `serverbridge.admin` | 允許使用 `/sb reload` | OP |
+
+沒有安裝權限插件時，`serverbridge.use` 預設已授予所有玩家；是否限制 OP 只需要看
+各 bridge 的 `require-op`。如果日後安裝權限插件，仍可以另外撤銷
+`serverbridge.use`，作為全域禁止跨服的控制。
 
 ## 常見問題
 
@@ -303,8 +334,9 @@ bridges:
 1. `/sb list` 是否看得到該連接點。
 2. `enabled` 是否為 `true`。
 3. `world` 名稱是否正確。
-4. 玩家是否有 `serverbridge.use` 權限。
-5. 修改設定後是否執行過 `/sb reload`。
+4. `require-op: true` 時，玩家是否為 OP。
+5. 玩家是否有 `serverbridge.use` 權限。
+6. 修改設定後是否執行過 `/sb reload`。
 
 ### 顯示無法連線到目的伺服器
 

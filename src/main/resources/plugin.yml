@@ -11,7 +11,7 @@ commands:
     aliases: [sbridge, sb]
 permissions:
   serverbridge.use:
-    description: Allows automatic and command-based transfers.
+    description: Allows automatic bridge-region transfers.
     default: true
   serverbridge.admin:
     description: Allows ServerBridge configuration reloads.
