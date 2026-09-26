@@ -86,7 +86,7 @@ final class BridgeConfig {
         String value = section.getString("destination.mode", "native").trim().toLowerCase(Locale.ROOT);
         return switch (value) {
             case "native", "transfer" -> Bridge.ConnectionMode.NATIVE;
-            case "velocity", "proxy" -> Bridge.ConnectionMode.VELOCITY;
+            case "velocity" -> Bridge.ConnectionMode.VELOCITY;
             default -> throw new IllegalArgumentException(
                     "destination.mode must be 'native' or 'velocity', but was '" + value + "'"
             );

@@ -55,9 +55,89 @@ plugins/ServerBridge/config.yml
 
 ## 第二步：選擇連線方式
 
-如果玩家平常直接加入每一台 Paper 伺服器，請使用「原生 Transfer」。如果玩家只
-加入 Velocity 的公開位址，再由 Velocity 連接各台後端，請使用「Velocity
+如果玩家平常直接加入每一台 Paper 伺服器，請使用「原生 Transfer」。如果玩家經
+Velocity 連接各台後端，即使 Velocity 前方還有 Nginx，也請使用「Velocity
 代理」。同一份設定中也可以讓不同 bridge 使用不同模式。
+
+### Nginx 在 Velocity 前方的架構
+
+若實際架構是：
+
+```text
+玩家 → Nginx（TCP 邊緣代理）→ Velocity（Minecraft 代理）→ Paper A／Paper B
+```
+
+ServerBridge 仍然要設定 `mode: velocity`。Nginx 只負責轉送玩家與 Velocity
+之間的 TCP 連線，不負責決定玩家要進入哪一台 Paper 後端；真正執行後端切換的是
+Velocity。
+
+各層的工作如下：
+
+| 元件 | 工作 | 是否安裝 ServerBridge |
+| --- | --- | --- |
+| Nginx | 公開入口、TCP 轉送、隱藏 Velocity 位址 | 不需要 |
+| Velocity | 驗證玩家、選擇及切換 Paper 後端 | 不需要 |
+| Paper | 偵測玩家進入區域、要求 Velocity 切服、處理抵達座標 | 需要 |
+
+請勿在 ServerBridge 寫 `mode: proxy`，因為「proxy」無法分辨是 Nginx 還是
+Velocity。設定只接受明確的 `mode: native` 或 `mode: velocity`。
+
+Nginx 必須使用 `stream` TCP 代理，而不是一般網站使用的 `http` reverse proxy。
+最簡單的範例：
+
+```nginx
+stream {
+    upstream minecraft_velocity {
+        server 127.0.0.1:25577;
+    }
+
+    server {
+        listen 25565;
+        proxy_pass minecraft_velocity;
+        proxy_timeout 1h;
+    }
+}
+```
+
+對應的 `velocity.toml` 可將 Velocity 綁定在只有 Nginx 能連到的位址：
+
+```toml
+bind = "127.0.0.1:25577"
+
+[advanced]
+haproxy-protocol = false
+bungee-plugin-message-channel = true
+```
+
+如果 Nginx 和 Velocity 不在同一台主機，請把 `127.0.0.1` 換成內網 IP，並用
+防火牆限制該連接埠只能由 Nginx 主機連入。
+
+#### 是否啟用 PROXY protocol
+
+普通 TCP 轉送可以正常遊玩，但 Velocity 看到的來源 IP 會是 Nginx。若希望
+Velocity 得到玩家真實 IP，可以讓 Nginx 傳送 PROXY protocol：
+
+```nginx
+server {
+    listen 25565;
+    proxy_pass minecraft_velocity;
+    proxy_protocol on;
+}
+```
+
+並同步修改 Velocity：
+
+```toml
+[advanced]
+haproxy-protocol = true
+bungee-plugin-message-channel = true
+```
+
+這兩邊必須同時開啟或同時關閉。只開其中一邊會讓 Velocity 無法正確解析連線。
+
+在這種三層架構下，ServerBridge 不需要知道 Nginx 的位址。區域傳送仍填 Velocity
+後端名稱，例如 `server: resource`。Minecraft Cookie、抵達座標和插件訊息會經由
+既有連線通過 Velocity 與 Nginx，不需要額外的 Nginx 插件。
 
 ### 方式 A：原生 Transfer
 
@@ -143,7 +223,8 @@ ServerBridge。
 
 注意事項：
 
-- 玩家必須從 Velocity 代理進入；直接加入後端時，代理切服訊息不會生效
+- 玩家必須經過 Velocity 進入；從 Nginx 轉到 Velocity 可以，但不能直接加入 Paper
+  後端
 - `server` 大小寫及拼法必須和 `velocity.toml` 的 `[servers]` 名稱完全一致
 - 建議使用 Velocity 的 `modern` 玩家資訊轉送，不要使用安全性較差的 `legacy`
 - 使用 modern forwarding 時，後端 `server.properties` 的 `online-mode` 設為

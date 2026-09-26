@@ -24,7 +24,7 @@ bridges:
       max: { x: 104, y: 70, z: 5 }
     destination:
       # native: Minecraft Transfer Protocol, using host and port.
-      # velocity: Velocity's BungeeCord-compatible channel, using the proxy server name.
+      # velocity: Ask Velocity to switch backend servers. Use this even when Nginx is in front.
       mode: native
       host: resource.example.net
       port: 25566
@@ -42,6 +42,7 @@ bridges:
       max: { x: 114, y: 70, z: 5 }
     destination:
       mode: velocity
+      # This is a Velocity backend name, not an Nginx upstream name.
       # Must exactly match a server key under "[servers]" in velocity.toml.
       server: resource
       arrival: { world: world, x: 0.5, y: 65, z: 0.5, yaw: 0, pitch: 0 }
