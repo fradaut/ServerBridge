@@ -12,8 +12,10 @@ record Bridge(
         double maxX,
         double maxY,
         double maxZ,
+        ConnectionMode connectionMode,
         String host,
         int port,
+        String proxyServer,
         Arrival arrival
 ) {
     boolean contains(Location location) {
@@ -34,5 +36,10 @@ record Bridge(
     }
 
     record Arrival(String world, double x, double y, double z, float yaw, float pitch) {
+    }
+
+    enum ConnectionMode {
+        NATIVE,
+        WATERFALL
     }
 }

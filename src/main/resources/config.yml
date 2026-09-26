@@ -19,7 +19,24 @@ bridges:
       min: { x: 100, y: 60, z: -5 }
       max: { x: 104, y: 70, z: 5 }
     destination:
+      # native: Minecraft Transfer Protocol, using host and port.
+      # waterfall: BungeeCord plugin messaging, using the proxy server name.
+      mode: native
       host: resource.example.net
       port: 25566
       # Optional exact landing point on the destination server.
+      arrival: { world: world, x: 0.5, y: 65, z: 0.5, yaw: 0, pitch: 0 }
+
+  # Waterfall/BungeeCord example:
+  survival-to-resource-via-proxy:
+    enabled: false
+    display-name: "代理資源世界"
+    world: world
+    region:
+      min: { x: 110, y: 60, z: -5 }
+      max: { x: 114, y: 70, z: 5 }
+    destination:
+      mode: waterfall
+      # Must exactly match a server key under "servers:" in the proxy config.yml.
+      server: resource
       arrival: { world: world, x: 0.5, y: 65, z: 0.5, yaw: 0, pitch: 0 }

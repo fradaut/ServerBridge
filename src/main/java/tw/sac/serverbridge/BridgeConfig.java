@@ -34,10 +34,18 @@ final class BridgeConfig {
 
     private static Bridge parse(String id, ConfigurationSection section) {
         String world = required(section, "world");
-        String host = required(section, "destination.host");
-        int port = section.getInt("destination.port", 25565);
-        if (port < 1 || port > 65535) {
-            throw new IllegalArgumentException("destination.port must be between 1 and 65535");
+        Bridge.ConnectionMode connectionMode = connectionMode(section);
+        String host = "";
+        int port = 0;
+        String proxyServer = "";
+        if (connectionMode == Bridge.ConnectionMode.NATIVE) {
+            host = required(section, "destination.host");
+            port = section.getInt("destination.port", 25565);
+            if (port < 1 || port > 65535) {
+                throw new IllegalArgumentException("destination.port must be between 1 and 65535");
+            }
+        } else {
+            proxyServer = required(section, "destination.server");
         }
 
         double x1 = number(section, "region.min.x");
@@ -65,10 +73,23 @@ final class BridgeConfig {
                 world,
                 Math.min(x1, x2), Math.min(y1, y2), Math.min(z1, z2),
                 Math.max(x1, x2), Math.max(y1, y2), Math.max(z1, z2),
+                connectionMode,
                 host,
                 port,
+                proxyServer,
                 arrival
         );
+    }
+
+    private static Bridge.ConnectionMode connectionMode(ConfigurationSection section) {
+        String value = section.getString("destination.mode", "native").trim().toLowerCase(Locale.ROOT);
+        return switch (value) {
+            case "native", "transfer" -> Bridge.ConnectionMode.NATIVE;
+            case "waterfall", "bungeecord", "proxy" -> Bridge.ConnectionMode.WATERFALL;
+            default -> throw new IllegalArgumentException(
+                    "destination.mode must be 'native' or 'waterfall', but was '" + value + "'"
+            );
+        };
     }
 
     private static String required(ConfigurationSection section, String path) {

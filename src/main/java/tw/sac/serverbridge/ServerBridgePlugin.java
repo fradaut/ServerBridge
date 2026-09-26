@@ -19,12 +19,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 public final class ServerBridgePlugin extends JavaPlugin implements Listener {
@@ -45,6 +43,7 @@ public final class ServerBridgePlugin extends JavaPlugin implements Listener {
         loadBridgeConfig();
         registerCommands();
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getMessenger().registerOutgoingPluginChannel(this, WaterfallConnector.CHANNEL);
 
         long interval = Math.max(1L, getConfig().getLong("check-interval-ticks", 5L));
         getServer().getScheduler().runTaskTimer(this, this::scanPlayers, interval, interval);
@@ -105,7 +104,11 @@ public final class ServerBridgePlugin extends JavaPlugin implements Listener {
             player.storeCookie(arrivalCookie, TransferTicket.encode(bridge.arrival()));
         }
         player.sendMessage(message("transferring", "<aqua>正在前往 <white><server></white>…</aqua>", "server", bridge.displayName()));
-        player.transfer(bridge.host(), bridge.port());
+        if (bridge.connectionMode() == Bridge.ConnectionMode.WATERFALL) {
+            WaterfallConnector.connect(this, player, bridge.proxyServer());
+        } else {
+            player.transfer(bridge.host(), bridge.port());
+        }
     }
 
     @EventHandler
