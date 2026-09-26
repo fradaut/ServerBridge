@@ -44,5 +44,6 @@ bridges:
       mode: velocity
       # This is a Velocity backend name, not an Nginx upstream name.
       # Must exactly match a server key under "[servers]" in velocity.toml.
+      # Velocity's accepts-transfers may remain false; this mode uses Connect messaging.
       server: resource
       arrival: { world: world, x: 0.5, y: 65, z: 0.5, yaw: 0, pitch: 0 }

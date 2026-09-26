@@ -107,6 +107,7 @@ bind = "127.0.0.1:25577"
 [advanced]
 haproxy-protocol = false
 bungee-plugin-message-channel = true
+accepts-transfers = false
 ```
 
 如果 Nginx 和 Velocity 不在同一台主機，請把 `127.0.0.1` 換成內網 IP，並用
@@ -138,6 +139,40 @@ bungee-plugin-message-channel = true
 在這種三層架構下，ServerBridge 不需要知道 Nginx 的位址。區域傳送仍填 Velocity
 後端名稱，例如 `server: resource`。Minecraft Cookie、抵達座標和插件訊息會經由
 既有連線通過 Velocity 與 Nginx，不需要額外的 Nginx 插件。
+
+#### `accepts-transfers` 可以保持 `false`
+
+你的 `velocity.toml` 可以保留：
+
+```toml
+[advanced]
+accepts-transfers = false
+bungee-plugin-message-channel = true
+```
+
+這兩個設定控制的是不同功能：
+
+| 設定 | 功能 | ServerBridge Velocity 模式是否需要 |
+| --- | --- | --- |
+| `accepts-transfers` | 接收 Minecraft 原生 Transfer 封包建立的新玩家連線 | 不需要，可保持 `false` |
+| `bungee-plugin-message-channel` | 接收 Paper 後端送來的相容插件訊息，例如 `Connect` | 需要，必須為 `true` |
+
+當玩家進入區域時，`mode: velocity` 的執行流程是：
+
+```text
+Paper A 偵測區域
+  → 經現有後端連線送出 Connect 訊息
+  → Velocity 將同一名玩家切換到 Paper B
+  → 玩家原本的 Nginx→Velocity TCP 連線保持不變
+```
+
+整個流程不會呼叫 Paper 的 `Player.transfer(...)`，不會讓客戶端另外建立 Transfer
+連線，因此 Velocity 不會檢查 `accepts-transfers`。請勿為了解決 ServerBridge 而把
+它改成 `true`。
+
+相反地，若 bridge 寫成 `mode: native`，插件就會發送原生 Transfer；玩家的新連線
+會抵達 Nginx 再進入 Velocity，並被 `accepts-transfers = false` 拒絕。因此在
+Nginx→Velocity→Paper 架構中，所有跨後端 bridge 都應使用 `mode: velocity`。
 
 ### 方式 A：原生 Transfer
 
@@ -234,7 +269,8 @@ ServerBridge。
 - 後端連接埠仍應使用防火牆保護，只允許 Velocity 代理連入
 
 使用 Velocity 模式時，不需要為這個 bridge 設定 `accepts-transfers=true`，因為
-切服動作由代理完成，而不是 Minecraft 原生 Transfer。
+切服動作由代理完成，而不是 Minecraft 原生 Transfer。Velocity 自己的
+`accepts-transfers` 也可以保持 `false`。
 
 ## 第三步：取得連接區域座標
 
@@ -436,6 +472,9 @@ IP／網域、連接埠、防火牆和路由器轉發。
 `destination.server` 是否和 `velocity.toml` 的後端名稱完全一致，並確認
 `bungee-plugin-message-channel = true`。ServerBridge 使用 Velocity 內建的
 `BungeeCord` 相容頻道，不需要另外在 Velocity 安裝 ServerBridge 插件。
+
+`accepts-transfers = false` 不會造成這個問題，不需要為了測試而打開；請確認 bridge
+使用的是 `mode: velocity`，不是 `mode: native`。
 
 ### 玩家抵達後立刻被送回
 
